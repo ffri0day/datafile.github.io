@@ -1,5 +1,5 @@
 // server.js (v2)
-// ฟีเจอร์เพิ่ม: โฟลเดอร์, ลบไฟล์/โฟลเดอร์, Auth/JWT/Role, Drag&Drop (ฝั่ง server รองรับเหมือน multipart ปกติ)
+// ฟีเจอร์: โฟลเดอร์, ลบไฟล์/โฟลเดอร์, Auth/JWT/Role, Drag&Drop (multipart)
 
 const express = require('express');
 const multer = require('multer');
@@ -24,7 +24,6 @@ if (!fs.existsSync(UPLOAD_ROOT)) fs.mkdirSync(UPLOAD_ROOT, { recursive: true });
 
 // ---------- Utilities ----------
 function sanitizeSegment(name) {
-  // ใช้ได้เฉพาะอักษร/ตัวเลข/จุด/ขีด/ขีดล่าง/เว้นวรรค — อย่างอื่นแทนด้วย _
   return (name || '').toString().replace(/[^a-zA-Z0-9._ -]/g, '_').trim();
 }
 function sanitizeFilename(name) {
@@ -37,21 +36,8 @@ function safePathFromRoot(relPath = '') {
   if (!joined.startsWith(UPLOAD_ROOT)) throw new Error('Invalid path');
   return joined;
 }
-function humanizeStatFile(full, name) {
-  const st = fs.statSync(full);
-  const type = mime.lookup(name) || 'application/octet-stream';
-  return {
-    name,
-    size: st.size,
-    mtime: st.mtime,
-    type,
-    previewUrl: `/api/file/preview?path=${encodeURIComponent(name)}`,
-    downloadUrl: `/api/file/download?path=${encodeURIComponent(name)}`
-  };
-}
 function splitPathAndName(p) {
-  // แยก path (dir) กับ name (basename)
-  const clean = p.replace(/\\/g, '/').replace(/^\/+/, '');
+  const clean = (p || '').replace(/\\/g, '/').replace(/^\/+/, '');
   const idx = clean.lastIndexOf('/');
   if (idx === -1) return { dir: '', name: clean };
   return { dir: clean.slice(0, idx), name: clean.slice(idx + 1) };
@@ -60,11 +46,8 @@ function splitPathAndName(p) {
 // ---------- Users / Auth ----------
 function readUsers() {
   if (!fs.existsSync(USERS_FILE)) return [];
-  try {
-    return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-  } catch {
-    return [];
-  }
+  try { return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); }
+  catch { return []; }
 }
 function writeUsers(users) {
   fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
@@ -85,11 +68,8 @@ function issueToken(user) {
 }
 function parseAuth(req, res, next) {
   const token = req.cookies[TOKEN_COOKIE];
-  if (!token) return next();
-  try {
-    req.user = jwt.verify(token, JWT_SECRET);
-  } catch {
-    // ignore invalid token
+  if (token) {
+    try { req.user = jwt.verify(token, JWT_SECRET); } catch { /* ignore */ }
   }
   next();
 }
@@ -120,7 +100,6 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const cleaned = sanitizeFilename(file.originalname);
-    // กันชื่อซ้ำ
     const rel = (req.query.dir || req.body.dir || '').toString();
     const dest = safePathFromRoot(rel);
     const ext = path.extname(cleaned);
@@ -144,7 +123,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(parseAuth);
 app.use(express.static(path.join(__dirname, 'public')));
-// หมายเหตุ: ไม่เสิร์ฟ /uploads แบบ static เพื่อควบคุมการเข้าถึงผ่าน API เท่านั้น
+// ไม่เสิร์ฟ /uploads แบบ static เพื่อควบคุมผ่าน API เท่านั้น
 
 // ---------- Auth APIs ----------
 app.post('/api/auth/login', (req, res) => {
@@ -188,8 +167,6 @@ app.post('/api/auth/register', requireRole('admin'), (req, res) => {
 });
 
 // ---------- Folder & File APIs ----------
-
-// สร้างโฟลเดอร์ใหม่ใน path ที่ระบุ
 app.post('/api/folders', requireRole('admin', 'uploader'), (req, res) => {
   const { dir = '', name } = req.body || {};
   if (!name) return res.status(400).json({ ok: false, error: 'name required' });
@@ -205,7 +182,6 @@ app.post('/api/folders', requireRole('admin', 'uploader'), (req, res) => {
   }
 });
 
-// ลบโฟลเดอร์ทั้งก้อน (recursive) — เฉพาะ admin
 app.delete('/api/folders', requireRole('admin'), (req, res) => {
   const { dir = '' } = req.query || {};
   try {
@@ -219,7 +195,6 @@ app.delete('/api/folders', requireRole('admin'), (req, res) => {
   }
 });
 
-// รายการไฟล์ + โฟลเดอร์ในไดเร็กทอรี
 app.get('/api/files', (req, res) => {
   const { dir = '' } = req.query || {};
   try {
@@ -255,7 +230,6 @@ app.get('/api/files', (req, res) => {
   }
 });
 
-// อัปโหลด (รองรับหลายไฟล์) => ต้อง login + role uploader/admin
 app.post('/api/upload', requireRole('admin', 'uploader'), upload.array('files', 20), (req, res) => {
   const dir = (req.query.dir || req.body.dir || '').toString();
   const uploaded = (req.files || []).map(f => {
@@ -273,7 +247,6 @@ app.post('/api/upload', requireRole('admin', 'uploader'), upload.array('files', 
   res.json({ ok: true, files: uploaded });
 });
 
-// ลบไฟล์ => uploader/admin
 app.delete('/api/files', requireRole('admin', 'uploader'), (req, res) => {
   const { path: rel } = req.query || {};
   if (!rel) return res.status(400).json({ ok: false, error: 'path required' });
@@ -289,7 +262,6 @@ app.delete('/api/files', requireRole('admin', 'uploader'), (req, res) => {
   }
 });
 
-// พรีวิวไฟล์ (inline) — เปิดให้ทุกคนดู/โหลดได้
 app.get('/api/file/preview', (req, res) => {
   const rel = (req.query.path || '').toString();
   try {
@@ -306,7 +278,6 @@ app.get('/api/file/preview', (req, res) => {
   }
 });
 
-// ดาวน์โหลดไฟล์ — เปิดให้ทุกคน
 app.get('/api/file/download', (req, res) => {
   const rel = (req.query.path || '').toString();
   try {

@@ -25,10 +25,6 @@ body.theme-pcshs {
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-/* ========= Typography ========= */
-body.theme-pcshs, body.theme-pcshs button, body.theme-pcshs input, body.theme-pcshs table {
   font-family: "Prompt", system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Thai", "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
@@ -49,8 +45,6 @@ body.theme-pcshs, body.theme-pcshs button, body.theme-pcshs input, body.theme-pc
 .app-header p {
   color: rgba(255,255,255,.9);
 }
-
-/* subtle decorative glow */
 .app-header::after {
   content: "";
   position: absolute;
@@ -96,7 +90,6 @@ body.theme-pcshs, body.theme-pcshs button, body.theme-pcshs input, body.theme-pc
 .btn-outline:hover { background: #f8fafc; }
 .btn-outline:focus { outline: 2px solid var(--ring); outline-offset: 2px; }
 
-/* Icon-only or small buttons can add .btn-quiet */
 .btn-quiet {
   background: transparent;
   border-color: transparent;
@@ -149,12 +142,8 @@ table.data-table tbody tr:hover { background: #f8fafc; }
 table.data-table tbody tr:last-child td { border-bottom: none; }
 
 /* ========= Breadcrumbs ========= */
-#breadcrumbs button {
-  font-weight: 600;
-}
-#breadcrumbs span {
-  color: #94a3b8; /* slate-400 */
-}
+#breadcrumbs button { font-weight: 600; }
+#breadcrumbs span { color: #94a3b8; /* slate-400 */ }
 
 /* ========= Modal ========= */
 #modal .modal-frame,
@@ -184,7 +173,6 @@ table.data-table tbody tr:last-child td { border-bottom: none; }
 }
 
 /* ========= Utility ========= */
-.maxw { max-width: 1240px; margin: 0 auto; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
 .muted { color: var(--muted); }
 

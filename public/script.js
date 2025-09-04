@@ -1,4 +1,4 @@
-// public/script.js (v2) — เพิ่ม auth/roles, โฟลเดอร์, ลบไฟล์/โฟลเดอร์, drag&drop
+// public/script.js (v2) — auth/roles, โฟลเดอร์, ลบไฟล์/โฟลเดอร์, drag&drop, ปุ่มเข้าสู่ระบบลอย
 
 const fileRows = document.getElementById('fileRows');
 const emptyState = document.getElementById('emptyState');
@@ -30,9 +30,11 @@ const newFolderName = document.getElementById('newFolderName');
 const btnCreateFolder = document.getElementById('btnCreateFolder');
 const btnDeleteFolder = document.getElementById('btnDeleteFolder');
 
+const btnOpenLogin = document.getElementById('btnOpenLogin');
+
 let filesCache = [];
 let foldersCache = [];
-let currentDir = ''; // relative path from root, '' = root
+let currentDir = ''; // '' = root
 let me = null; // { email, role } | null
 
 // ---------- Helpers ----------
@@ -63,6 +65,15 @@ function joinPath(...parts) {
   return parts.filter(Boolean).join('/').replace(/\/+/g, '/');
 }
 
+// ---------- Login modal open/close ----------
+function openLogin(open) {
+  if (!loginModal) return;
+  if (open) { loginModal.classList.remove('hidden'); loginModal.classList.add('flex'); }
+  else { loginModal.classList.add('hidden'); loginModal.classList.remove('flex'); }
+}
+btnOpenLogin?.addEventListener('click', () => openLogin(true));
+btnCloseLogin?.addEventListener('click', () => openLogin(false));
+
 // ---------- Auth UI ----------
 async function refreshMe() {
   const res = await fetch('/api/auth/me');
@@ -74,18 +85,21 @@ async function refreshMe() {
 function renderAuth() {
   authBox.innerHTML = '';
   if (!me) {
+    // ยังไม่ล็อกอิน: โชว์ปุ่มเข้าสู่ระบบ
     const b = document.createElement('button');
     b.textContent = 'เข้าสู่ระบบ';
-    b.className = 'rounded-xl bg-slate-900 text-white px-3 py-2 text-sm font-medium hover:bg-slate-700';
+    b.className = 'btn btn-outline text-sm px-3 py-2';
     b.addEventListener('click', () => openLogin(true));
     authBox.appendChild(b);
+    btnOpenLogin?.classList.remove('hidden');
   } else {
+    // ล็อกอินแล้ว: แสดงอีเมล/บทบาท + ปุ่มออกจากระบบ และซ่อนปุ่มลอย
     const span = document.createElement('span');
     span.className = 'text-sm text-slate-600';
     span.textContent = `${me.email} (${me.role})`;
     const out = document.createElement('button');
     out.textContent = 'ออกจากระบบ';
-    out.className = 'rounded-xl bg-white border px-3 py-2 text-sm hover:bg-slate-50';
+    out.className = 'btn btn-outline text-sm px-3 py-2';
     out.addEventListener('click', async () => {
       await fetch('/api/auth/logout', { method: 'POST' });
       me = null;
@@ -93,19 +107,11 @@ function renderAuth() {
       toggleWriteControls();
     });
     authBox.append(span, out);
+    btnOpenLogin?.classList.add('hidden');
   }
 }
-function openLogin(open) {
-  if (open) {
-    loginModal.classList.remove('hidden');
-    loginModal.classList.add('flex');
-  } else {
-    loginModal.classList.add('hidden');
-    loginModal.classList.remove('flex');
-  }
-}
-btnCloseLogin.addEventListener('click', () => openLogin(false));
-btnDoLogin.addEventListener('click', async () => {
+
+btnDoLogin?.addEventListener('click', async () => {
   const email = loginEmail.value.trim();
   const password = loginPassword.value;
   const res = await fetch('/api/auth/login', {
@@ -134,7 +140,7 @@ function renderBreadcrumbs() {
   frag.append(rootLink);
 
   let acc = '';
-  parts.forEach((p, idx) => {
+  parts.forEach((p) => {
     const sep = document.createElement('span');
     sep.textContent = ' / ';
     sep.className = 'text-slate-400';
@@ -159,7 +165,7 @@ async function changeDir(newDir) {
   toggleWriteControls();
 }
 
-btnCreateFolder.addEventListener('click', async () => {
+btnCreateFolder?.addEventListener('click', async () => {
   const name = newFolderName.value.trim();
   if (!name) return;
   const res = await fetch('/api/folders', {
@@ -176,7 +182,7 @@ btnCreateFolder.addEventListener('click', async () => {
   await fetchFiles();
 });
 
-btnDeleteFolder.addEventListener('click', async () => {
+btnDeleteFolder?.addEventListener('click', async () => {
   if (!confirm('ยืนยันการลบโฟลเดอร์นี้ทั้งหมด? (ย้อนกลับไม่ได้)')) return;
   const params = new URLSearchParams({ dir: currentDir });
   const res = await fetch('/api/folders?' + params.toString(), { method: 'DELETE' });
@@ -185,7 +191,6 @@ btnDeleteFolder.addEventListener('click', async () => {
     alert(data.error || 'ลบโฟลเดอร์ไม่สำเร็จ');
     return;
   }
-  // กลับไประดับบน
   const parts = currentDir.split('/').filter(Boolean);
   parts.pop();
   await changeDir(parts.join('/'));
@@ -196,8 +201,8 @@ function renderRows() {
   const q = (searchInput.value || '').toLowerCase().trim();
   fileRows.innerHTML = '';
 
-  const folders = foldersCache.slice().filter(f => f.name.toLowerCase().includes(q));
-  const files = filesCache.slice().filter(f => f.name.toLowerCase().includes(q));
+  const folders = (foldersCache || []).filter(f => f.name.toLowerCase().includes(q));
+  const files = (filesCache || []).filter(f => f.name.toLowerCase().includes(q));
 
   if (!folders.length && !files.length) {
     emptyState.classList.remove('hidden');
@@ -212,7 +217,7 @@ function renderRows() {
     tr.innerHTML = `
       <td class="p-3">
         <div class="flex items-center gap-2">
-          <span class="text-lg">${iconFor('folder')}</span>
+          <span class="text-lg">📂</span>
           <button class="font-medium text-slate-900 hover:underline" data-action="enter-folder" data-path="${d.path}">${d.name}</button>
         </div>
       </td>
@@ -263,7 +268,7 @@ async function fetchFiles() {
   renderRows();
 }
 
-searchInput.addEventListener('input', renderRows);
+searchInput?.addEventListener('input', renderRows);
 
 // โฟลเดอร์/ไฟล์ actions (enter/preview/delete)
 document.addEventListener('click', async (e) => {
@@ -309,7 +314,7 @@ function toggleWriteControls() {
   btnDeleteFolder.disabled = !(isAdmin() && currentDir);
 }
 
-uploadForm.addEventListener('submit', (e) => {
+uploadForm?.addEventListener('submit', (e) => {
   e.preventDefault();
   doUpload(fileInput.files);
 });
@@ -370,22 +375,22 @@ async function doUpload(fileList) {
   xhr.send(formData);
 }
 
-// Drag & Drop
+// Drag & Drop: ไฮไลท์กรอบเมื่อกำลังลาก
 ;['dragenter','dragover'].forEach(evt =>
-  dropZone.addEventListener(evt, e => {
+  dropZone?.addEventListener(evt, e => {
     e.preventDefault();
     e.stopPropagation();
-    dropZone.classList.add('ring-2', 'ring-slate-300', 'bg-slate-50');
+    dropZone.classList.add('is-dragover');
   })
 );
 ;['dragleave','drop'].forEach(evt =>
-  dropZone.addEventListener(evt, e => {
+  dropZone?.addEventListener(evt, e => {
     e.preventDefault();
     e.stopPropagation();
-    dropZone.classList.remove('ring-2', 'ring-slate-300', 'bg-slate-50');
+    dropZone.classList.remove('is-dragover');
   })
 );
-dropZone.addEventListener('drop', async (e) => {
+dropZone?.addEventListener('drop', async (e) => {
   if (!canWrite()) return alert('กรุณาเข้าสู่ระบบเพื่ออัปโหลด');
   const dt = e.dataTransfer;
   if (!dt || !dt.files || !dt.files.length) return;
@@ -429,10 +434,10 @@ function openPreview(file) {
   modal.classList.remove('hidden');
   modal.classList.add('flex');
 }
-modalClose.addEventListener('click', () => {
+modalClose?.addEventListener('click', () => {
   modal.classList.add('hidden'); modal.classList.remove('flex');
 });
-modal.addEventListener('click', (e) => {
+modal?.addEventListener('click', (e) => {
   if (e.target === modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
 });
 
@@ -442,9 +447,3 @@ modal.addEventListener('click', (e) => {
   await refreshMe();
   await fetchFiles();
 })();
-// เพิ่มหลังบรรทัด dropZone.addEventListener('dragenter' ... )
-dropZone.classList.add('is-dragover');
-// และใน 'dragleave' / 'drop'
-dropZone.classList.remove('is-dragover');
-const btnOpenLogin = document.getElementById('btnOpenLogin');
-btnOpenLogin?.addEventListener('click', () => openLogin(true));
