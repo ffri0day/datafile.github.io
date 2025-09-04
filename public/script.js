@@ -446,3 +446,5 @@ modal.addEventListener('click', (e) => {
 dropZone.classList.add('is-dragover');
 // และใน 'dragleave' / 'drop'
 dropZone.classList.remove('is-dragover');
+const btnOpenLogin = document.getElementById('btnOpenLogin');
+btnOpenLogin?.addEventListener('click', () => openLogin(true));
