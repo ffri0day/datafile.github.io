@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>File Vault — โฟลเดอร์/อัปโหลด/พรีวิว/ดาวน์โหลด</title>
+  <title>File Vault — จัดการไฟล์แบบเป็นมิตร</title>
 
   <!-- Google Fonts: Prompt -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Tailwind -->
+  <!-- Tailwind (utility classes) -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- Theme CSS -->
@@ -18,75 +18,109 @@
 </head>
 
 <body class="theme-pcshs">
-  <div class="max-w-6xl mx-auto p-6">
-    <!-- Header -->
-    <header class="mb-6 app-header">
-      <div class="flex items-center justify-between gap-4">
+  <div class="max-w-6xl mx-auto p-6 space-y-6">
+    <!-- Header: นุ่มนวล เป็นกันเอง -->
+    <header class="app-header">
+      <div class="flex items-start md:items-center justify-between gap-4">
         <div>
           <h1 class="text-2xl md:text-3xl">📁 File Vault</h1>
-          <p class="text-sm md:text-base">โฟลเดอร์ • อัปโหลดลากวาง • พรีวิว • ดาวน์โหลด • สิทธิ์ผู้ใช้</p>
+          <p class="text-sm md:text-base">อัปโหลดไฟล์ง่าย • จัดระเบียบเป็นโฟลเดอร์ • พรีวิว • ดาวน์โหลด • ควบคุมสิทธิ์</p>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <span class="badge">ลากแล้ววางได้</span>
+            <span class="badge">รองรับรูป / PDF / ข้อความ</span>
+            <span class="badge">สิทธิ์: admin / uploader / viewer</span>
+          </div>
         </div>
-
-        <!-- ⬇️ ปุ่มเข้าสู่ระบบ (ลอยมุมขวาบน) + กล่องสถานะผู้ใช้ -->
+        <!-- ปุ่มเข้าสู่ระบบ (ลอย) + กล่องสถานะผู้ใช้ (ต้องคง ID เดิมไว้) -->
         <div class="flex items-center gap-3">
           <button id="btnOpenLogin" class="btn btn-primary hidden">เข้าสู่ระบบ</button>
           <div id="authBox" class="flex items-center gap-3"></div>
         </div>
       </div>
-      <div class="mt-3">
-        <span class="badge">ระบบจัดการไฟล์</span>
-      </div>
     </header>
 
-    <!-- Breadcrumbs + Folder actions -->
-    <section class="card p-4 mb-4">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <nav id="breadcrumbs" class="text-sm"></nav>
-        <div class="flex items-center gap-2">
-          <input id="newFolderName" type="text" placeholder="ชื่อโฟลเดอร์ใหม่" class="w-48 px-3 py-2 text-sm" />
-          <button id="btnCreateFolder" class="btn btn-primary text-sm px-3 py-2 disabled:opacity-40" disabled>+ สร้างโฟลเดอร์</button>
-          <button id="btnDeleteFolder" class="btn btn-outline text-sm px-3 py-2 disabled:opacity-40" title="ลบโฟลเดอร์นี้ (admin)" disabled>🗑️ ลบโฟลเดอร์นี้</button>
+    <!-- แถบช่วยนำทาง + การจัดการโฟลเดอร์ -->
+    <section class="card p-4">
+      <div class="flex flex-col lg:flex-row gap-4">
+        <div class="flex-1 space-y-2">
+          <label class="text-sm font-semibold">ตำแหน่งปัจจุบัน</label>
+          <nav id="breadcrumbs" class="text-sm"></nav>
+          <p class="text-xs muted">คลิกชื่อโฟลเดอร์ในเส้นทางเพื่อย้อนกลับอย่างรวดเร็ว</p>
         </div>
-      </div>
-    </section>
-
-    <!-- Upload (drag & drop) -->
-    <section class="card p-5 mb-6">
-      <form id="uploadForm" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium mb-2">เลือกไฟล์ หรือ ลากไฟล์มาวางด้านล่าง</label>
-          <input id="fileInput" name="files" type="file" multiple class="block w-full text-sm disabled:opacity-40" disabled />
-        </div>
-
-        <div id="dropZone" class="p-6 text-center muted">วางไฟล์ที่นี่เพื่ออัปโหลด (ลากวาง)</div>
-
-        <div class="flex items-center gap-3">
-          <button id="btnUpload" type="submit" class="btn btn-primary px-4 py-2 disabled:opacity-40" disabled>อัปโหลด</button>
-          <span id="status" class="text-sm muted"></span>
-        </div>
-
-        <div id="progressWrap" class="hidden">
-          <div class="h-2 w-full bg-slate-200 rounded">
-            <div id="progressBar" class="h-2 rounded" style="width:0%; background: var(--primary);"></div>
+        <div class="w-full lg:w-auto flex items-end gap-2">
+          <div class="flex flex-col">
+            <label for="newFolderName" class="text-sm font-semibold">สร้างโฟลเดอร์ใหม่</label>
+            <input id="newFolderName" type="text" placeholder="เช่น เอกสารปี 2568" class="w-60 px-3 py-2 text-sm" />
           </div>
-          <p id="progressText" class="text-xs muted mt-1">0%</p>
+          <button id="btnCreateFolder" class="btn btn-primary text-sm px-3 py-2 disabled:opacity-40" disabled>+ สร้าง</button>
+          <button id="btnDeleteFolder" class="btn btn-outline text-sm px-3 py-2 disabled:opacity-40" title="ลบโฟลเดอร์นี้ (admin)" disabled>🗑️ ลบโฟลเดอร์</button>
         </div>
-      </form>
-    </section>
-
-    <!-- Toolbar -->
-    <section class="card p-4 mb-4">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div class="flex items-center gap-2">
-          <input id="search" type="text" placeholder="ค้นหาชื่อไฟล์..." class="w-full md:w-80 px-3 py-2 text-sm" />
-        </div>
-        <div class="text-sm muted">พรีวิว: รูป, PDF, ข้อความ/โค้ด</div>
       </div>
     </section>
 
-    <!-- Files & Folders -->
+    <!-- เลย์เอาต์หลัก: ซ้าย = อัปโหลด, ขวา = ค้นหา/ทิปส์ -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- อัปโหลด (ซ้าย กิน 2 คอลัมน์) -->
+      <div class="lg:col-span-2 card p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="font-semibold">อัปโหลดไฟล์</h2>
+          <span class="text-xs muted">สูงสุด ~50MB ต่อไฟล์</span>
+        </div>
+
+        <form id="uploadForm" class="space-y-4" aria-label="แบบฟอร์มอัปโหลดไฟล์">
+          <!-- ปุ่มเลือกไฟล์ -->
+          <div>
+            <label for="fileInput" class="block text-sm font-medium mb-2">เลือกไฟล์จากเครื่อง</label>
+            <input id="fileInput" name="files" type="file" multiple class="block w-full text-sm disabled:opacity-40" disabled />
+          </div>
+
+          <!-- Dropzone ที่เป็นมิตรมากขึ้น -->
+          <div id="dropZone" class="p-8 text-center">
+            <div class="flex flex-col items-center gap-2">
+              <div class="text-4xl">⬇️</div>
+              <div class="font-semibold">ลากไฟล์ของคุณมาวางที่นี่</div>
+              <div class="text-sm muted">หรือใช้ปุ่ม “อัปโหลด” ด้านล่าง</div>
+            </div>
+          </div>
+
+          <!-- ปุ่มอัปโหลด + สถานะ -->
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+            <button id="btnUpload" type="submit" class="btn btn-primary px-4 py-2 disabled:opacity-40" disabled>อัปโหลด</button>
+            <span id="status" class="text-sm muted"></span>
+          </div>
+
+          <!-- แถบความคืบหน้า -->
+          <div id="progressWrap" class="hidden">
+            <div class="h-2 w-full bg-slate-200 rounded">
+              <div id="progressBar" class="h-2 rounded" style="width:0%; background: var(--primary);"></div>
+            </div>
+            <p id="progressText" class="text-xs muted mt-1">0%</p>
+          </div>
+        </form>
+      </div>
+
+      <!-- กล่องค้นหา + เคล็ดลับ (ขวา) -->
+      <div class="card p-5 space-y-5">
+        <div class="space-y-2">
+          <label for="search" class="text-sm font-semibold">ค้นหาไฟล์</label>
+          <input id="search" type="text" placeholder="พิมพ์ชื่อไฟล์เพื่อค้นหา…" class="w-full px-3 py-2 text-sm" />
+          <p class="text-xs muted">พิมพ์บางส่วนของชื่อไฟล์ ระบบจะกรองให้ทันที</p>
+        </div>
+
+        <div class="space-y-2">
+          <h3 class="font-semibold">เคล็ดลับใช้งาน</h3>
+          <ul class="text-sm list-disc pl-5 space-y-1 muted">
+            <li>ต้องอัปโหลด/ลบไฟล์? <span class="font-medium">เข้าสู่ระบบ</span> ก่อน (สิทธิ์ uploader หรือ admin)</li>
+            <li>พรีวิวได้: รูปภาพ, PDF, ข้อความ/โค้ด (อื่นๆ ดาวน์โหลดได้)</li>
+            <li>ตั้งชื่อไฟล์ซ้ำ ระบบจะต่อท้าย (1), (2) ให้อัตโนมัติ</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- รายการไฟล์ & โฟลเดอร์ -->
     <section class="table-wrap">
-      <table class="data-table">
+      <table class="data-table" aria-label="รายการไฟล์และโฟลเดอร์">
         <thead>
           <tr>
             <th>ชื่อ</th>
@@ -98,16 +132,22 @@
         </thead>
         <tbody id="fileRows"></tbody>
       </table>
-      <div id="emptyState" class="hidden p-10 text-center muted">โฟลเดอร์ว่าง ลองอัปโหลดหรือสร้างโฟลเดอร์ใหม่ได้เลย 🚀</div>
+
+      <!-- Empty state ที่เป็นมิตรมากขึ้น -->
+      <div id="emptyState" class="hidden p-10 text-center">
+        <div class="text-5xl mb-3">🗂️</div>
+        <p class="text-slate-800 font-medium">โฟลเดอร์นี้ยังว่างอยู่</p>
+        <p class="mt-1 muted">เริ่มจากการ “สร้างโฟลเดอร์ใหม่” หรือ “อัปโหลดไฟล์” ข้างบนได้เลย</p>
+      </div>
     </section>
   </div>
 
   <!-- Preview Modal -->
   <div id="modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-50">
-    <div class="modal-frame w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
+    <div class="modal-frame w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <div class="modal-header">
         <h3 id="modalTitle" class="font-semibold">พรีวิว</h3>
-        <button id="modalClose" class="btn btn-quiet px-2 py-1">ปิด</button>
+        <button id="modalClose" class="btn btn-quiet px-2 py-1" aria-label="ปิดพรีวิว">ปิด</button>
       </div>
       <div id="modalBody" class="modal-body overflow-auto"></div>
     </div>
@@ -115,12 +155,14 @@
 
   <!-- Login Modal -->
   <div id="loginModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-50">
-    <div class="modal-frame w-full max-w-sm">
+    <div class="modal-frame w-full max-w-sm" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
       <div class="modal-header">
-        <h3 class="font-semibold">เข้าสู่ระบบ</h3>
+        <h3 id="loginTitle" class="font-semibold">เข้าสู่ระบบ</h3>
       </div>
       <div class="modal-body space-y-3">
+        <label class="sr-only" for="loginEmail">อีเมล</label>
         <input id="loginEmail" type="email" placeholder="อีเมล" class="w-full px-3 py-2 text-sm" />
+        <label class="sr-only" for="loginPassword">รหัสผ่าน</label>
         <input id="loginPassword" type="password" placeholder="รหัสผ่าน" class="w-full px-3 py-2 text-sm" />
         <button id="btnDoLogin" class="btn btn-primary w-full px-3 py-2 text-sm">เข้าสู่ระบบ</button>
         <p class="hint text-xs">เริ่มต้น (dev): <code class="mono">admin@example.com / admin123</code></p>
@@ -133,22 +175,5 @@
 
   <!-- App JS -->
   <script src="./script.js"></script>
-
-  <!-- (ทางเลือก) หากยังไม่ได้เพิ่มโค้ดใน script.js ให้ผูกปุ่มลอยเปิด modal ชั่วคราว -->
-  <script>
-    (function () {
-      const btnOpenLogin = document.getElementById('btnOpenLogin');
-      const loginModal = document.getElementById('loginModal');
-      const btnCloseLogin = document.getElementById('btnCloseLogin');
-
-      function openLogin(open) {
-        if (!loginModal) return;
-        if (open) { loginModal.classList.remove('hidden'); loginModal.classList.add('flex'); }
-        else { loginModal.classList.add('hidden'); loginModal.classList.remove('flex'); }
-      }
-      btnOpenLogin && btnOpenLogin.addEventListener('click', () => openLogin(true));
-      btnCloseLogin && btnCloseLogin.addEventListener('click', () => openLogin(false));
-    })();
-  </script>
 </body>
 </html>
