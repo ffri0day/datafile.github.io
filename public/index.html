@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>File Vault — อัปโหลด/ดู/ดาวน์โหลดไฟล์</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body class="theme-pcshs">
+  <header class="app-header">
+    <div class="app-title">File Vault</div>
+    <div class="app-actions">
+      <div id="authBox" class="flex items-center gap-3"></div>
+      <button id="btnOpenLogin" class="btn btn-primary hidden">เข้าสู่ระบบ</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Search + breadcrumbs -->
+    <div class="toolbar">
+      <div class="breadcrumbs" id="breadcrumbs"></div>
+      <div class="search">
+        <input type="search" id="search" placeholder="ค้นหาไฟล์..." />
+      </div>
+    </div>
+
+    <!-- File table -->
+    <div class="card p-0 overflow-auto">
+      <table class="data-table w-full">
+        <thead>
+          <tr>
+            <th style="width:36px;"></th>
+            <th>ชื่อ</th>
+            <th style="width:120px;">ขนาด</th>
+            <th style="width:180px;">ประเภท</th>
+            <th style="width:180px;">การทำงาน</th>
+          </tr>
+        </thead>
+        <tbody id="fileRows"></tbody>
+      </table>
+      <div id="emptyState" class="muted p-6 text-center hidden">ยังไม่มีไฟล์ในโฟลเดอร์นี้</div>
+    </div>
+
+    <!-- Folder actions -->
+    <div class="card grid" style="gap:12px; grid-template-columns: 1fr auto auto;">
+      <input id="newFolderName" type="text" placeholder="ชื่อโฟลเดอร์ใหม่" />
+      <button id="btnCreateFolder" class="btn btn-outline">สร้างโฟลเดอร์</button>
+      <button id="btnDeleteFolder" class="btn btn-outline warn">ลบโฟลเดอร์นี้</button>
+    </div>
+
+    <!-- Upload -->
+    <form id="uploadForm" class="card p-0">
+      <div id="dropZone" class="dropzone">
+        <input id="fileInput" type="file" multiple hidden />
+        <p>ลากไฟล์มาปล่อยที่นี่ หรือ <label for="fileInput" class="link">เลือกไฟล์</label></p>
+        <button type="button" id="btnUpload" class="btn btn-primary">อัปโหลด</button>
+      </div>
+      <div id="progressWrap" class="progress hidden">
+        <div id="progressBar" class="bar" style="width:0%"></div>
+        <div id="progressText" class="percent">0%</div>
+      </div>
+      <div id="status" class="muted p-3 text-sm"></div>
+    </form>
+  </main>
+
+  <!-- Preview Modal -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modalTitle">พรีวิว</h3>
+        <button id="modalClose" class="btn btn-outline">ปิด</button>
+      </div>
+      <div id="modalBody" class="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Login Modal -->
+  <div id="loginModal" class="modal hidden">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>เข้าสู่ระบบ</h3>
+        <button id="btnCloseLogin" class="btn btn-outline">ปิด</button>
+      </div>
+      <div class="modal-body grid" style="gap:12px;">
+        <input id="loginEmail" type="email" placeholder="อีเมล" />
+        <input id="loginPassword" type="password" placeholder="รหัสผ่าน" />
+        <button id="btnDoLogin" class="btn btn-primary">เข้าสู่ระบบ</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/script.js" defer></script>
+</body>
+</html>
