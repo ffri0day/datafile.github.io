@@ -3,189 +3,240 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>File Vault — จัดการไฟล์เป็นระเบียบ</title>
+  <title>File Vault (Client-Only) — เข้าสู่ระบบได้แน่</title>
 
-  <!-- Font -->
+  <!-- Fonts + Tailwind (CDN) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-  <!-- Tailwind -->
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Theme CSS -->
-  <link rel="stylesheet" href="./style.css" />
+  <style>
+    :root{
+      --bg:#f5f7fb;--surface:#fff;--text:#0f172a;--muted:#64748b;--line:#e5e7eb;
+      --primary:#0ea5e9;--primary-600:#0284c7;--accent:#6366f1;--ring:rgba(14,165,233,.35);
+      --radius:16px;--shadow-sm:0 1px 3px rgba(2,8,23,.06);--shadow:0 10px 25px rgba(2,8,23,.08);
+      --gradient:linear-gradient(135deg,var(--primary) 0%,var(--accent) 100%);
+    }
+    *{box-sizing:border-box}
+    body{background:var(--bg);color:var(--text);font-family:"Prompt",system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Thai","Helvetica Neue",Arial}
+    .app-header{position:relative;border-radius:28px;padding:20px 24px;background:var(--gradient);color:#fff;box-shadow:var(--shadow);overflow:hidden}
+    .app-header h1{font-weight:800;letter-spacing:-.02em}
+    .app-header::after{content:"";position:absolute;inset:-40% -10% auto auto;height:200px;width:200px;filter:blur(60px);background:radial-gradient(closest-side,rgba(255,255,255,.28),transparent)}
+    .card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid rgba(2,8,23,.02)}
+    .btn{border-radius:12px;font-weight:600;transition:transform .06s ease,box-shadow .2s ease,background-color .2s ease,color .2s ease,border-color .2s ease;box-shadow:var(--shadow-sm);border:1px solid transparent}
+    .btn:active{transform:translateY(1px)}
+    .btn-primary{background:var(--primary);color:#fff;border-color:var(--primary-600)}
+    .btn-primary:hover{background:var(--primary-600)}
+    .btn-outline{background:#fff;color:var(--text);border-color:#e2e8f0}
+    .btn-outline:hover{background:#f8fafc}
+    .badge{display:inline-flex;align-items:center;gap:6px;background:#eef2ff;color:#3730a3;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
+    .muted{color:var(--muted)}
+    /* Modal */
+    .modal-frame{background:#fff;border-radius:20px;box-shadow:var(--shadow);border:1px solid rgba(2,8,23,.05)}
+    .modal-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #eef2f7}
+  </style>
 </head>
-<body class="theme-pcshs">
-  <!-- App Container -->
-  <div class="max-w-6xl mx-auto p-6 space-y-6">
+<body>
+  <div class="max-w-5xl mx-auto p-6 space-y-6">
     <!-- Header -->
     <header class="app-header">
       <div class="flex items-start md:items-center justify-between gap-4">
         <div class="space-y-1">
           <h1 class="text-2xl md:text-3xl">📁 File Vault</h1>
-          <p class="text-sm md:text-base">อัปโหลด • จัดหมวดหมู่เป็นโฟลเดอร์ • พรีวิว • ดาวน์โหลด • ควบคุมสิทธิ์</p>
+          <p class="text-sm md:text-base">เดโมเวอร์ชัน: ล็อกอิน/สิทธิ์ผู้ใช้ แบบไฟล์เดียว</p>
           <div class="mt-2 flex flex-wrap gap-2">
-            <span class="badge">Drag & Drop</span>
-            <span class="badge">รูป / PDF / ข้อความ</span>
-            <span class="badge">admin • uploader • viewer</span>
+            <span class="badge">Client-only</span>
+            <span class="badge">LocalStorage</span>
+            <span class="badge">Admin/Uploader/Viewer</span>
           </div>
         </div>
         <div class="flex items-center gap-3">
-          <!-- ปุ่มลอยเปิด Modal (ซ่อนอัตโนมัติเมื่อเข้าสู่ระบบแล้ว) -->
-          <button id="btnOpenLogin" class="btn btn-primary">เข้าสู่ระบบ</button>
-          <!-- กล่องสถานะผู้ใช้ (ให้ script.js จัดการ) -->
+          <!-- ปุ่มเปิด modal -->
+          <button id="btnOpenLogin" class="btn btn-primary px-3 py-2">เข้าสู่ระบบ</button>
+          <!-- กล่องสถานะผู้ใช้ -->
           <div id="authBox" class="flex items-center gap-3"></div>
         </div>
       </div>
     </header>
 
-    <!-- Main Layout: Sidebar (ซ้าย) + Content (ขวา) -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <!-- Sidebar: โฟลเดอร์ & ทิปส์ -->
-      <aside class="lg:col-span-4 space-y-6">
-        <!-- Path / Breadcrumbs -->
-        <section class="card p-5 space-y-3">
-          <div class="flex items-center justify-between">
-            <h2 class="font-semibold">ตำแหน่งปัจจุบัน</h2>
-          </div>
-          <nav id="breadcrumbs" class="text-sm"></nav>
-          <p class="text-xs muted">คลิกชิ้นส่วนในเส้นทางเพื่อย้อนกลับ</p>
-        </section>
-
-        <!-- Folder Controls -->
-        <section class="card p-5 space-y-4">
-          <h2 class="font-semibold">จัดการโฟลเดอร์</h2>
-          <div class="flex flex-col gap-2">
-            <label for="newFolderName" class="text-sm font-medium">ชื่อโฟลเดอร์ใหม่</label>
-            <input id="newFolderName" type="text" placeholder="เช่น ใบงาน ภาคเรียนที่ 1" class="w-full px-3 py-2 text-sm" />
-            <div class="flex items-center gap-2">
-              <button id="btnCreateFolder" class="btn btn-primary text-sm px-3 py-2 disabled:opacity-40" disabled>+ สร้างโฟลเดอร์</button>
-              <button id="btnDeleteFolder" class="btn btn-outline text-sm px-3 py-2 disabled:opacity-40" title="ลบโฟลเดอร์นี้ (admin)" disabled>🗑️ ลบโฟลเดอร์</button>
-            </div>
-          </div>
-          <div class="pt-2 border-t border-slate-200">
-            <p class="text-xs muted">สิทธิ์ที่ต้องใช้: สร้าง/ลบไฟล์ = <span class="font-medium">uploader</span> หรือ <span class="font-medium">admin</span> (ลบโฟลเดอร์ทั้งก้อนใช้ admin)</p>
-          </div>
-        </section>
-
-        <!-- Tips -->
-        <section class="card p-5 space-y-3">
-          <h2 class="font-semibold">เคล็ดลับ</h2>
-          <ul class="text-sm list-disc pl-5 space-y-1 muted">
-            <li>รองรับลากไฟล์แล้ววางในกรอบอัปโหลด</li>
-            <li>ไฟล์ชื่อซ้ำ ระบบจะเพิ่ม (1), (2)… ให้อัตโนมัติ</li>
-            <li>พรีวิว: รูป, PDF, ข้อความ/โค้ด • อื่นๆ ดาวน์โหลดได้</li>
-          </ul>
-        </section>
-      </aside>
-
-      <!-- Content: อัปโหลด + ค้นหา + รายการไฟล์ -->
-      <main class="lg:col-span-8 space-y-6">
-        <!-- Upload Card -->
-        <section class="card p-5 space-y-5">
-          <div class="flex items-center justify-between">
-            <h2 class="font-semibold">อัปโหลดไฟล์</h2>
-            <span class="text-xs muted">สูงสุด ~ 50MB ต่อไฟล์</span>
-          </div>
-
-          <form id="uploadForm" class="space-y-4" aria-label="แบบฟอร์มอัปโหลดไฟล์">
-            <div>
-              <label for="fileInput" class="block text-sm font-medium mb-2">เลือกไฟล์จากเครื่อง</label>
-              <input id="fileInput" name="files" type="file" multiple class="block w-full text-sm disabled:opacity-40" disabled />
-            </div>
-
-            <!-- Dropzone -->
-            <div id="dropZone" class="p-8 text-center">
-              <div class="flex flex-col items-center gap-2">
-                <div class="text-4xl">⬇️</div>
-                <div class="font-semibold">ลากไฟล์ของคุณมาวางที่นี่</div>
-                <div class="text-sm muted">หรือกดปุ่ม “อัปโหลด” ด้านล่าง</div>
-              </div>
-            </div>
-
-            <!-- Actions + Progress -->
-            <div class="space-y-3">
-              <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-                <button id="btnUpload" type="submit" class="btn btn-primary px-4 py-2 disabled:opacity-40" disabled>อัปโหลด</button>
-                <span id="status" class="text-sm muted"></span>
-              </div>
-              <div id="progressWrap" class="hidden">
-                <div class="h-2 w-full bg-slate-200 rounded">
-                  <div id="progressBar" class="h-2 rounded" style="width:0%; background: var(--primary);"></div>
-                </div>
-                <p id="progressText" class="text-xs muted mt-1">0%</p>
-              </div>
-            </div>
-          </form>
-        </section>
-
-        <!-- Toolbar: Search -->
-        <section class="card p-5 space-y-2">
-          <h2 class="font-semibold">ค้นหาไฟล์</h2>
-          <div class="flex items-center gap-2">
-            <input id="search" type="text" placeholder="พิมพ์ชื่อไฟล์เพื่อค้นหา…" class="w-full px-3 py-2 text-sm" />
-          </div>
-        </section>
-
-        <!-- Files Table -->
-        <section class="table-wrap">
-          <table class="data-table" aria-label="รายการไฟล์และโฟลเดอร์">
-            <thead>
-              <tr>
-                <th>ชื่อ</th>
-                <th>ชนิด</th>
-                <th class="text-right">ขนาด</th>
-                <th>อัปเดตล่าสุด</th>
-                <th class="text-center">การทำงาน</th>
-              </tr>
-            </thead>
-            <tbody id="fileRows"></tbody>
-          </table>
-
-          <!-- Empty State -->
-          <div id="emptyState" class="hidden p-10 text-center">
-            <div class="text-5xl mb-3">🗂️</div>
-            <p class="text-slate-800 font-medium">ยังไม่มีไฟล์ในโฟลเดอร์นี้</p>
-            <p class="mt-1 muted">เริ่มจาก “สร้างโฟลเดอร์ใหม่” ทางซ้าย หรือ “อัปโหลดไฟล์” ด้านบน</p>
-          </div>
-        </section>
-      </main>
-    </div>
-  </div>
-
-  <!-- Preview Modal -->
-  <div id="modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-50">
-    <div class="modal-frame w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-      <div class="modal-header">
-        <h3 id="modalTitle" class="font-semibold">พรีวิว</h3>
-        <button id="modalClose" class="btn btn-quiet px-2 py-1" aria-label="ปิดพรีวิว">ปิด</button>
+    <!-- เนื้อหาทดลอง (แสดงสถานะสิทธิ์ที่ใช้งานได้) -->
+    <section class="card p-5 space-y-3">
+      <h2 class="font-semibold">สถานะการเข้าระบบ</h2>
+      <p id="whoami" class="muted text-sm">ยังไม่ได้เข้าสู่ระบบ</p>
+      <div class="pt-2 text-xs muted">
+        ผู้ใช้เริ่มต้น: <code>admin@example.com / admin123</code> •
+        <code>uploader@example.com / pass1234</code> •
+        <code>viewer@example.com / viewer123</code>
       </div>
-      <div id="modalBody" class="modal-body overflow-auto"></div>
-    </div>
+    </section>
+
+    <!-- ตัวอย่างสิทธิ์ -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="card p-5 space-y-2">
+        <h3 class="font-semibold">สำหรับทุกคน</h3>
+        <ul class="list-disc pl-5 text-sm">
+          <li>ดูข้อมูลสาธารณะ</li>
+        </ul>
+      </div>
+      <div class="card p-5 space-y-2">
+        <h3 class="font-semibold">สำหรับ uploader/admin</h3>
+        <button id="btnWriteThing" class="btn btn-outline px-3 py-2" disabled>ทำงานที่ต้องมีสิทธิ์เขียน</button>
+        <p class="text-xs muted">ปุ่มนี้จะเปิดได้เมื่อคุณเป็น uploader หรือ admin</p>
+      </div>
+      <div class="card p-5 space-y-2">
+        <h3 class="font-semibold">สำหรับ admin</h3>
+        <button id="btnAdminThing" class="btn btn-outline px-3 py-2" disabled>งานเฉพาะผู้ดูแลระบบ</button>
+        <p class="text-xs muted">ปุ่มนี้จะเปิดได้เมื่อคุณเป็น admin</p>
+      </div>
+    </section>
   </div>
 
   <!-- Login Modal -->
   <div id="loginModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-50">
-    <div class="modal-frame w-full max-w-sm" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+    <div class="modal-frame w-full max-w-sm">
       <div class="modal-header">
-        <h3 id="loginTitle" class="font-semibold">เข้าสู่ระบบ</h3>
+        <h3 class="font-semibold">เข้าสู่ระบบ</h3>
+        <button id="btnCloseLogin" class="btn px-2 py-1">✕</button>
       </div>
-      <div class="modal-body space-y-3">
-        <label class="sr-only" for="loginEmail">อีเมล</label>
-        <input id="loginEmail" type="email" placeholder="อีเมล" class="w-full px-3 py-2 text-sm" />
-        <label class="sr-only" for="loginPassword">รหัสผ่าน</label>
-        <input id="loginPassword" type="password" placeholder="รหัสผ่าน" class="w-full px-3 py-2 text-sm" />
+      <div class="p-4 space-y-3">
+        <input id="loginEmail" type="email" placeholder="อีเมล" class="w-full border rounded-xl px-3 py-2 text-sm" />
+        <input id="loginPassword" type="password" placeholder="รหัสผ่าน" class="w-full border rounded-xl px-3 py-2 text-sm" />
         <button id="btnDoLogin" class="btn btn-primary w-full px-3 py-2 text-sm">เข้าสู่ระบบ</button>
-        <p class="hint text-xs">เริ่มต้น (dev): <code class="mono">admin@example.com / admin123</code></p>
-      </div>
-      <div class="px-4 py-3 border-t text-right">
-        <button id="btnCloseLogin" class="btn btn-outline px-3 py-1.5 text-sm">ปิด</button>
+        <p class="text-xs muted">ตัวอย่าง: <code>admin@example.com / admin123</code></p>
       </div>
     </div>
   </div>
 
-  <!-- App JS -->
-  <script src="./script.js"></script>
+  <script>
+    // ===== Simplest client-only auth =====
+    const USERS_KEY = 'fv_users';
+    const SESSION_KEY = 'fv_session';
+
+    function seedUsersIfNeeded() {
+      if (localStorage.getItem(USERS_KEY)) return;
+      const users = [
+        { email: 'admin@example.com', password: 'admin123', role: 'admin' },
+        { email: 'uploader@example.com', password: 'pass1234', role: 'uploader' },
+        { email: 'viewer@example.com', password: 'viewer123', role: 'viewer' },
+      ];
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    }
+
+    function getUsers() {
+      try { return JSON.parse(localStorage.getItem(USERS_KEY)) || []; }
+      catch { return []; }
+    }
+    function findUserByEmail(email) {
+      return getUsers().find(u => u.email.toLowerCase() === String(email).toLowerCase());
+    }
+    function saveSession(user) {
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ email: user.email, role: user.role }));
+    }
+    function clearSession() {
+      localStorage.removeItem(SESSION_KEY);
+    }
+    function getSession() {
+      try { return JSON.parse(localStorage.getItem(SESSION_KEY)); }
+      catch { return null; }
+    }
+
+    // ===== UI wiring =====
+    const btnOpenLogin = document.getElementById('btnOpenLogin');
+    const loginModal = document.getElementById('loginModal');
+    const btnCloseLogin = document.getElementById('btnCloseLogin');
+    const btnDoLogin = document.getElementById('btnDoLogin');
+    const loginEmail = document.getElementById('loginEmail');
+    const loginPassword = document.getElementById('loginPassword');
+    const authBox = document.getElementById('authBox');
+    const whoami = document.getElementById('whoami');
+    const btnWriteThing = document.getElementById('btnWriteThing');
+    const btnAdminThing = document.getElementById('btnAdminThing');
+
+    function openLogin(open) {
+      if (open) { loginModal.classList.remove('hidden'); loginModal.classList.add('flex'); }
+      else { loginModal.classList.add('hidden'); loginModal.classList.remove('flex'); }
+    }
+
+    btnOpenLogin.addEventListener('click', () => {
+      loginEmail.value = '';
+      loginPassword.value = '';
+      openLogin(true);
+      setTimeout(() => loginEmail.focus(), 50);
+    });
+    btnCloseLogin.addEventListener('click', () => openLogin(false));
+
+    // กด Enter ในช่องรหัสผ่านเพื่อเข้าสู่ระบบ
+    loginPassword.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') btnDoLogin.click();
+    });
+
+    btnDoLogin.addEventListener('click', () => {
+      const email = loginEmail.value.trim();
+      const password = loginPassword.value;
+      if (!email || !password) {
+        alert('กรุณากรอกอีเมลและรหัสผ่าน');
+        return;
+      }
+      const user = findUserByEmail(email);
+      if (!user || user.password !== password) {
+        alert('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+        return;
+      }
+      saveSession(user);
+      renderAuth();
+      openLogin(false);
+    });
+
+    function renderAuth() {
+      authBox.innerHTML = '';
+      const session = getSession();
+
+      if (!session) {
+        // ยังไม่ล็อกอิน
+        whoami.textContent = 'ยังไม่ได้เข้าสู่ระบบ';
+        btnOpenLogin.classList.remove('hidden');
+
+        const b = document.createElement('button');
+        b.textContent = 'เข้าสู่ระบบ';
+        b.className = 'btn btn-outline px-3 py-2 text-sm';
+        b.addEventListener('click', () => btnOpenLogin.click());
+        authBox.appendChild(b);
+
+        // ปิดสิทธิ์
+        btnWriteThing.disabled = true;
+        btnAdminThing.disabled = true;
+      } else {
+        // ล็อกอินแล้ว
+        whoami.textContent = `กำลังใช้งานในชื่อ ${session.email} (สิทธิ์: ${session.role})`;
+        btnOpenLogin.classList.add('hidden');
+
+        const span = document.createElement('span');
+        span.className = 'text-sm muted';
+        span.textContent = `${session.email} (${session.role})`;
+
+        const out = document.createElement('button');
+        out.textContent = 'ออกจากระบบ';
+        out.className = 'btn btn-outline px-3 py-2 text-sm';
+        out.addEventListener('click', () => {
+          clearSession();
+          renderAuth();
+        });
+
+        authBox.append(span, out);
+
+        // เปิดสิทธิ์ตาม role
+        const canWrite = session.role === 'admin' || session.role === 'uploader';
+        btnWriteThing.disabled = !canWrite;
+        btnAdminThing.disabled = session.role !== 'admin';
+      }
+    }
+
+    // ===== Boot =====
+    (function init() {
+      seedUsersIfNeeded();
+      renderAuth();
+    })();
+  </script>
 </body>
 </html>
