@@ -442,3 +442,7 @@ modal.addEventListener('click', (e) => {
   await refreshMe();
   await fetchFiles();
 })();
+// เพิ่มหลังบรรทัด dropZone.addEventListener('dragenter' ... )
+dropZone.classList.add('is-dragover');
+// และใน 'dragleave' / 'drop'
+dropZone.classList.remove('is-dragover');
